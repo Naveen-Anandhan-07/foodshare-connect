@@ -14,7 +14,7 @@ const initialState = {
   city: "",
 };
 
-const ReceiverRegister = () => {
+function ReceiverRegister() {
   const [formData, setFormData] = useState(initialState);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -151,12 +151,12 @@ const ReceiverRegister = () => {
           </button>
         </form>
 
-        <p className="auth-footer-text">
+        <p className="auth-helper-text">
           Already have an account? <Link to="/receiver/login">Login here</Link>
         </p>
       </div>
     </div>
   );
-};
+}
 
 export default ReceiverRegister;

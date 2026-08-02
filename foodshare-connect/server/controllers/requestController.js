@@ -1,182 +1,611 @@
-const FoodRequest = require("../models/FoodRequest");
-const FoodDonation = require("../models/FoodDonation");
+const crypto = require("crypto");
+const FoodRequest = require(
+  "../models/FoodRequest"
+);
+const FoodDonation = require(
+  "../models/FoodDonation"
+);
 
-// @desc    Receiver creates a request for a food donation
-// @route   POST /api/requests
-const createRequest = async (req, res) => {
+function hasExpired(donation) {
+  const expiryTime =
+    new Date(donation.expiryTime);
+
+  const currentTime = new Date();
+
+  return expiryTime <= currentTime;
+}
+
+function generatePickupOtp() {
+  return crypto
+    .randomInt(100000, 1000000)
+    .toString();
+}
+
+async function createRequest(req, res) {
   try {
-    const { foodDonationId, message } = req.body;
+    const foodDonationId =
+      req.body.foodDonationId;
+
+    const message =
+      req.body.message || "";
 
     if (!foodDonationId) {
-      return res.status(400).json({ message: "foodDonationId is required" });
+      return res.status(400).json({
+        message:
+          "foodDonationId is required",
+      });
     }
 
-    const donation = await FoodDonation.findById(foodDonationId);
+    const donation =
+      await FoodDonation.findById(
+        foodDonationId
+      );
+
     if (!donation) {
-      return res.status(404).json({ message: "Food donation not found" });
+      return res.status(404).json({
+        message:
+          "Food donation not found",
+      });
     }
 
-    if (donation.status !== "Available") {
-      return res
-        .status(400)
-        .json({ message: "This food donation is no longer available" });
+    if (hasExpired(donation)) {
+      donation.status = "Expired";
+
+      await donation.save();
+
+      return res.status(400).json({
+        message:
+          "This food donation has expired",
+      });
     }
 
-    const request = await FoodRequest.create({
-      foodDonationId: donation._id,
-      donorId: donation.donorId,
-      receiverId: req.user._id,
-      message: message || "",
-      status: "Pending",
-    });
+    if (
+      donation.status !== "Available"
+    ) {
+      return res.status(400).json({
+        message:
+          "This food donation is no longer available",
+      });
+    }
 
-    // Move the donation from Available to Requested
+    const existingRequest =
+      await FoodRequest.findOne({
+        foodDonationId:
+          donation._id,
+        receiverId:
+          req.user._id,
+        status: {
+          $in: [
+            "Pending",
+            "Accepted",
+          ],
+        },
+      });
+
+    if (existingRequest) {
+      return res.status(400).json({
+        message:
+          "You already requested this food",
+      });
+    }
+
+    const request =
+      await FoodRequest.create({
+        foodDonationId:
+          donation._id,
+        donorId:
+          donation.donorId,
+        receiverId:
+          req.user._id,
+        message: message,
+        status: "Pending",
+      });
+
     donation.status = "Requested";
+
     await donation.save();
 
     res.status(201).json(request);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-};
+}
 
-// @desc    Get requests made by the logged-in receiver
-// @route   GET /api/requests/my-requests
-const getMyRequests = async (req, res) => {
+async function getMyRequests(req, res) {
   try {
-    const requests = await FoodRequest.find({ receiverId: req.user._id })
-      .populate("foodDonationId")
-      .populate("donorId", "name organizationName phone email city")
-      .sort({ createdAt: -1 });
+    const requests =
+      await FoodRequest.find({
+        receiverId: req.user._id,
+      })
+        .select("+pickupOtp")
+        .populate(
+          "foodDonationId"
+        )
+        .populate(
+          "donorId",
+          "name organizationName phone email city"
+        )
+        .sort({
+          createdAt: -1,
+        });
 
     res.json(requests);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-};
+}
 
-// @desc    Get requests received by the logged-in donor
-// @route   GET /api/requests/donor-requests
-const getDonorRequests = async (req, res) => {
+async function getDonorRequests(
+  req,
+  res
+) {
   try {
-    const requests = await FoodRequest.find({ donorId: req.user._id })
-      .populate("foodDonationId")
-      .populate(
-        "receiverId",
-        "name organizationName phone email city receiverType"
-      )
-      .sort({ createdAt: -1 });
+    const requests =
+      await FoodRequest.find({
+        donorId: req.user._id,
+      })
+        .populate(
+          "foodDonationId"
+        )
+        .populate(
+          "receiverId",
+          "name organizationName phone email city receiverType"
+        )
+        .sort({
+          createdAt: -1,
+        });
 
     res.json(requests);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-};
+}
 
-// @desc    Donor accepts a request
-// @route   PUT /api/requests/:id/accept
-const acceptRequest = async (req, res) => {
+async function acceptRequest(req, res) {
   try {
-    const request = await FoodRequest.findById(req.params.id);
-    if (!request) return res.status(404).json({ message: "Request not found" });
+    const request =
+      await FoodRequest.findById(
+        req.params.id
+      );
 
-    if (request.donorId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized for this request" });
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
+    }
+
+    if (
+      request.donorId.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "Not authorized for this request",
+      });
+    }
+
+    if (
+      request.status !== "Pending"
+    ) {
+      return res.status(400).json({
+        message:
+          "Only pending requests can be accepted",
+      });
+    }
+
+    const donation =
+      await FoodDonation.findById(
+        request.foodDonationId
+      );
+
+    if (!donation) {
+      return res.status(404).json({
+        message:
+          "Food donation not found",
+      });
+    }
+
+    if (hasExpired(donation)) {
+      donation.status = "Expired";
+      request.status = "Rejected";
+
+      await donation.save();
+      await request.save();
+
+      return res.status(400).json({
+        message:
+          "This food donation has expired",
+      });
     }
 
     request.status = "Accepted";
+    request.pickupOtp =
+      generatePickupOtp();
+    request.otpCreatedAt =
+      new Date();
+    request.otpVerifiedAt = null;
+
     await request.save();
-    res.json(request);
+
+    res.json({
+      message:
+        "Request accepted and pickup OTP generated",
+      status: request.status,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-};
+}
 
-// @desc    Donor rejects a request
-// @route   PUT /api/requests/:id/reject
-const rejectRequest = async (req, res) => {
+async function rejectRequest(req, res) {
   try {
-    const request = await FoodRequest.findById(req.params.id);
-    if (!request) return res.status(404).json({ message: "Request not found" });
+    const request =
+      await FoodRequest.findById(
+        req.params.id
+      );
 
-    if (request.donorId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized for this request" });
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
+    }
+
+    if (
+      request.donorId.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "Not authorized for this request",
+      });
+    }
+
+    if (
+      request.status !== "Pending"
+    ) {
+      return res.status(400).json({
+        message:
+          "Only pending requests can be rejected",
+      });
     }
 
     request.status = "Rejected";
+
     await request.save();
 
-    // Make the donation Available again since this request didn't work out
-    const donation = await FoodDonation.findById(request.foodDonationId);
-    if (donation && donation.status === "Requested") {
-      donation.status = "Available";
+    const donation =
+      await FoodDonation.findById(
+        request.foodDonationId
+      );
+
+    if (
+      donation &&
+      donation.status ===
+        "Requested"
+    ) {
+      if (hasExpired(donation)) {
+        donation.status = "Expired";
+      } else {
+        donation.status = "Available";
+      }
+
       await donation.save();
     }
 
     res.json(request);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-};
+}
 
-// @desc    Donor marks a request/donation as Completed
-// @route   PUT /api/requests/:id/complete
-const completeRequest = async (req, res) => {
+async function completeRequest(
+  req,
+  res
+) {
   try {
-    const request = await FoodRequest.findById(req.params.id);
-    if (!request) return res.status(404).json({ message: "Request not found" });
+    const enteredOtp = String(
+      req.body.otp || ""
+    ).trim();
 
-    if (request.donorId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized for this request" });
+    if (!/^\d{6}$/.test(enteredOtp)) {
+      return res.status(400).json({
+        message:
+          "Enter a valid 6-digit pickup OTP",
+      });
+    }
+
+    const request =
+      await FoodRequest.findById(
+        req.params.id
+      ).select("+pickupOtp");
+
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
+    }
+
+    if (
+      request.donorId.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "Not authorized for this request",
+      });
+    }
+
+    if (
+      request.status !== "Accepted"
+    ) {
+      return res.status(400).json({
+        message:
+          "Only accepted requests can be completed",
+      });
+    }
+
+    if (
+      !request.pickupOtp ||
+      enteredOtp !== request.pickupOtp
+    ) {
+      return res.status(400).json({
+        message:
+          "Incorrect pickup OTP",
+      });
+    }
+
+    const donation =
+      await FoodDonation.findById(
+        request.foodDonationId
+      );
+
+    if (!donation) {
+      return res.status(404).json({
+        message:
+          "Food donation not found",
+      });
+    }
+
+    if (hasExpired(donation)) {
+      donation.status = "Expired";
+
+      await donation.save();
+
+      return res.status(400).json({
+        message:
+          "This food donation has expired",
+      });
     }
 
     request.status = "Completed";
+    request.pickupOtp = "";
+    request.otpVerifiedAt =
+      new Date();
+    request.receiverLatitude = null;
+    request.receiverLongitude = null;
+    request.locationUpdatedAt = null;
+    request.isLocationShared = false;
+
+    donation.status = "Completed";
+
     await request.save();
+    await donation.save();
 
-    const donation = await FoodDonation.findById(request.foodDonationId);
-    if (donation) {
-      donation.status = "Completed";
-      await donation.save();
-    }
-
-    res.json(request);
+    res.json({
+      message:
+        "Pickup confirmed successfully",
+      status: request.status,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-};
+}
 
-// @desc    Receiver cancels their own request (only if still Pending)
-// @route   PUT /api/requests/:id/cancel
-const cancelRequest = async (req, res) => {
+async function cancelRequest(req, res) {
   try {
-    const request = await FoodRequest.findById(req.params.id);
-    if (!request) return res.status(404).json({ message: "Request not found" });
+    const request =
+      await FoodRequest.findById(
+        req.params.id
+      ).select("+pickupOtp");
 
-    if (request.receiverId.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: "Not authorized for this request" });
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
     }
 
-    if (request.status !== "Pending") {
-      return res
-        .status(400)
-        .json({ message: "Only pending requests can be cancelled" });
+    if (
+      request.receiverId.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "Not authorized for this request",
+      });
+    }
+
+    if (
+      request.status !== "Pending"
+    ) {
+      return res.status(400).json({
+        message:
+          "Only pending requests can be cancelled",
+      });
     }
 
     request.status = "Cancelled";
+    request.pickupOtp = "";
+
     await request.save();
 
-    // Make the donation Available again
-    const donation = await FoodDonation.findById(request.foodDonationId);
-    if (donation && donation.status === "Requested") {
-      donation.status = "Available";
+    const donation =
+      await FoodDonation.findById(
+        request.foodDonationId
+      );
+
+    if (
+      donation &&
+      donation.status ===
+        "Requested"
+    ) {
+      if (hasExpired(donation)) {
+        donation.status = "Expired";
+      } else {
+        donation.status = "Available";
+      }
+
       await donation.save();
     }
 
     res.json(request);
   } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
   }
-};
+}
+
+async function updateReceiverLocation(
+  req,
+  res
+) {
+  try {
+    const latitude = Number(
+      req.body.latitude
+    );
+    const longitude = Number(
+      req.body.longitude
+    );
+
+    if (
+      !Number.isFinite(latitude) ||
+      !Number.isFinite(longitude) ||
+      latitude < -90 ||
+      latitude > 90 ||
+      longitude < -180 ||
+      longitude > 180
+    ) {
+      return res.status(400).json({
+        message:
+          "Valid latitude and longitude are required",
+      });
+    }
+
+    const request =
+      await FoodRequest.findById(
+        req.params.id
+      );
+
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
+    }
+
+    if (
+      request.receiverId.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "Not authorized for this request",
+      });
+    }
+
+    if (request.status !== "Accepted") {
+      return res.status(400).json({
+        message:
+          "Location can only be shared for an accepted request",
+      });
+    }
+
+    request.receiverLatitude = latitude;
+    request.receiverLongitude = longitude;
+    request.locationUpdatedAt =
+      new Date();
+    request.isLocationShared = true;
+
+    await request.save();
+
+    res.json({
+      message: "Location updated",
+      receiverLatitude: latitude,
+      receiverLongitude: longitude,
+      locationUpdatedAt:
+        request.locationUpdatedAt,
+      isLocationShared: true,
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+}
+
+async function stopLocationSharing(
+  req,
+  res
+) {
+  try {
+    const request =
+      await FoodRequest.findById(
+        req.params.id
+      );
+
+    if (!request) {
+      return res.status(404).json({
+        message: "Request not found",
+      });
+    }
+
+    if (
+      request.receiverId.toString() !==
+      req.user._id.toString()
+    ) {
+      return res.status(403).json({
+        message:
+          "Not authorized for this request",
+      });
+    }
+
+    request.isLocationShared = false;
+    request.receiverLatitude = null;
+    request.receiverLongitude = null;
+    request.locationUpdatedAt = null;
+
+    await request.save();
+
+    res.json({
+      message:
+        "Location sharing stopped",
+    });
+  } catch (error) {
+    res.status(500).json({
+      message: "Server error",
+      error: error.message,
+    });
+  }
+}
 
 module.exports = {
   createRequest,
@@ -186,4 +615,6 @@ module.exports = {
   rejectRequest,
   completeRequest,
   cancelRequest,
+  updateReceiverLocation,
+  stopLocationSharing,
 };

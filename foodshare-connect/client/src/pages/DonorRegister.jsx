@@ -1,5 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import {
+  Link,
+  useNavigate,
+} from "react-router-dom";
 import { toast } from "react-toastify";
 import { registerDonor } from "../services/api";
 
@@ -11,45 +14,70 @@ const initialState = {
   organizationName: "",
   address: "",
   city: "",
+  fssaiNumber: "",
 };
 
-const DonorRegister = () => {
-  const [formData, setFormData] = useState(initialState);
-  const [loading, setLoading] = useState(false);
+function DonorRegister() {
+  const [formData, setFormData] =
+    useState(initialState);
+
+  const [loading, setLoading] =
+    useState(false);
+
   const navigate = useNavigate();
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-  };
+  function handleChange(event) {
+    const name = event.target.name;
+    const value = event.target.value;
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+    setFormData({
+      ...formData,
+      [name]: value,
+    });
+  }
+
+  async function handleSubmit(event) {
+    event.preventDefault();
     setLoading(true);
+
     try {
-      const { data } = await registerDonor(formData);
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("role", "donor");
-      localStorage.setItem("name", data.name);
-      toast.success("Registration successful! Welcome to FoodShare Connect.");
-      navigate("/donor/dashboard");
+      const response =
+        await registerDonor(formData);
+
+      toast.success(response.data.message);
+
+      navigate("/donor/login");
     } catch (error) {
-      toast.error(error.response?.data?.message || "Registration failed");
+      let message = "Registration failed";
+
+      if (
+        error.response &&
+        error.response.data &&
+        error.response.data.message
+      ) {
+        message = error.response.data.message;
+      }
+
+      toast.error(message);
     } finally {
       setLoading(false);
     }
-  };
+  }
 
   return (
     <div className="auth-wrapper">
       <div className="auth-card">
         <h2>Donor Registration</h2>
+
         <p className="auth-subtitle">
-          Share your surplus food and help reduce waste in your community.
+          Register and wait for manual FSSAI
+          verification.
         </p>
 
         <form onSubmit={handleSubmit}>
           <div className="form-group">
             <label>Full Name</label>
+
             <input
               className="form-control"
               name="name"
@@ -62,6 +90,7 @@ const DonorRegister = () => {
           <div className="form-row">
             <div className="form-group">
               <label>Email</label>
+
               <input
                 type="email"
                 className="form-control"
@@ -71,8 +100,10 @@ const DonorRegister = () => {
                 required
               />
             </div>
+
             <div className="form-group">
               <label>Password</label>
+
               <input
                 type="password"
                 className="form-control"
@@ -88,6 +119,7 @@ const DonorRegister = () => {
           <div className="form-row">
             <div className="form-group">
               <label>Phone</label>
+
               <input
                 className="form-control"
                 name="phone"
@@ -96,21 +128,39 @@ const DonorRegister = () => {
                 required
               />
             </div>
+
             <div className="form-group">
               <label>Organization Name</label>
+
               <input
                 className="form-control"
                 name="organizationName"
                 value={formData.organizationName}
                 onChange={handleChange}
-                placeholder="Restaurant, hostel, home, etc."
                 required
               />
             </div>
           </div>
 
           <div className="form-group">
+            <label>FSSAI Licence Number</label>
+
+            <input
+              type="text"
+              className="form-control"
+              name="fssaiNumber"
+              value={formData.fssaiNumber}
+              onChange={handleChange}
+              pattern="[0-9]{14}"
+              maxLength="14"
+              placeholder="Enter 14-digit FSSAI number"
+              required
+            />
+          </div>
+
+          <div className="form-group">
             <label>Address</label>
+
             <input
               className="form-control"
               name="address"
@@ -122,6 +172,7 @@ const DonorRegister = () => {
 
           <div className="form-group">
             <label>City</label>
+
             <input
               className="form-control"
               name="city"
@@ -131,17 +182,26 @@ const DonorRegister = () => {
             />
           </div>
 
-          <button type="submit" className="btn btn-primary btn-block" disabled={loading}>
-            {loading ? "Registering..." : "Register as Donor"}
+          <button
+            type="submit"
+            className="btn btn-primary btn-block"
+            disabled={loading}
+          >
+            {loading
+              ? "Submitting..."
+              : "Submit Registration"}
           </button>
         </form>
 
-        <p className="auth-footer-text">
-          Already have an account? <Link to="/donor/login">Login here</Link>
+        <p className="auth-helper-text">
+          Already registered?{" "}
+          <Link to="/donor/login">
+            Login here
+          </Link>
         </p>
       </div>
     </div>
   );
-};
+}
 
 export default DonorRegister;

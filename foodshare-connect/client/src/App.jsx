@@ -1,9 +1,12 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 import Navbar from "./components/Navbar";
-import Footer from "./components/Footer";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 import Home from "./pages/Home";
@@ -17,6 +20,8 @@ import AddDonation from "./pages/AddDonation";
 import EditDonation from "./pages/EditDonation";
 import MyRequests from "./pages/MyRequests";
 import DonorRequests from "./pages/DonorRequests";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 
 import "./styles/global.css";
 
@@ -24,14 +29,42 @@ function App() {
   return (
     <BrowserRouter>
       <Navbar />
-      <ToastContainer position="top-right" autoClose={3000} />
-      <Routes>
-        <Route path="/" element={<Home />} />
 
-        <Route path="/donor/login" element={<DonorLogin />} />
-        <Route path="/donor/register" element={<DonorRegister />} />
-        <Route path="/receiver/login" element={<ReceiverLogin />} />
-        <Route path="/receiver/register" element={<ReceiverRegister />} />
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+      />
+
+      <Routes>
+        <Route
+          path="/"
+          element={<Home />}
+        />
+
+        <Route
+          path="/donor/login"
+          element={<DonorLogin />}
+        />
+
+        <Route
+          path="/donor/register"
+          element={<DonorRegister />}
+        />
+
+        <Route
+          path="/receiver/login"
+          element={<ReceiverLogin />}
+        />
+
+        <Route
+          path="/receiver/register"
+          element={<ReceiverRegister />}
+        />
+
+        <Route
+          path="/admin/login"
+          element={<AdminLogin />}
+        />
 
         <Route
           path="/donor/dashboard"
@@ -41,6 +74,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/donor/add-donation"
           element={
@@ -49,6 +83,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/donor/edit-donation/:id"
           element={
@@ -57,6 +92,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/donor/requests"
           element={
@@ -74,6 +110,7 @@ function App() {
             </ProtectedRoute>
           }
         />
+
         <Route
           path="/receiver/my-requests"
           element={
@@ -82,8 +119,17 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/admin/dashboard"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
-      <Footer />
+
     </BrowserRouter>
   );
 }

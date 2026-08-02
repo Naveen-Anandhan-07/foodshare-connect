@@ -5,7 +5,7 @@ import { FaPlus, FaBoxOpen, FaClock, FaCheckCircle, FaInbox } from "react-icons/
 import { getMyDonations, deleteDonation } from "../services/api";
 import DonationCard from "../components/DonationCard";
 
-const DonorDashboard = () => {
+function DonorDashboard() {
   const [donations, setDonations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -141,6 +141,6 @@ const DonorDashboard = () => {
       )}
     </div>
   );
-};
+}
 
 export default DonorDashboard;

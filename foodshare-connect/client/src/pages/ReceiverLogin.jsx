@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { loginReceiver } from "../services/api";
 
-const ReceiverLogin = () => {
+function ReceiverLogin() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -65,12 +65,12 @@ const ReceiverLogin = () => {
           </button>
         </form>
 
-        <p className="auth-footer-text">
+        <p className="auth-helper-text">
           New receiver? <Link to="/receiver/register">Register here</Link>
         </p>
       </div>
     </div>
   );
-};
+}
 
 export default ReceiverLogin;

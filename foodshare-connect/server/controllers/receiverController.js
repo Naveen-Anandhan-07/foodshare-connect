@@ -2,8 +2,6 @@ const bcrypt = require("bcryptjs");
 const Receiver = require("../models/Receiver");
 const generateToken = require("../utils/generateToken");
 
-// @desc    Register a new receiver
-// @route   POST /api/receivers/register
 const registerReceiver = async (req, res) => {
   try {
     const {
@@ -63,8 +61,6 @@ const registerReceiver = async (req, res) => {
   }
 };
 
-// @desc    Login receiver
-// @route   POST /api/receivers/login
 const loginReceiver = async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -97,14 +93,10 @@ const loginReceiver = async (req, res) => {
   }
 };
 
-// @desc    Get receiver profile
-// @route   GET /api/receivers/profile
 const getReceiverProfile = async (req, res) => {
   res.json(req.user);
 };
 
-// @desc    Update receiver profile
-// @route   PUT /api/receivers/profile
 const updateReceiverProfile = async (req, res) => {
   try {
     const receiver = await Receiver.findById(req.user._id);
@@ -145,8 +137,6 @@ const updateReceiverProfile = async (req, res) => {
   }
 };
 
-// @desc    Delete receiver profile
-// @route   DELETE /api/receivers/profile
 const deleteReceiverProfile = async (req, res) => {
   try {
     await Receiver.findByIdAndDelete(req.user._id);

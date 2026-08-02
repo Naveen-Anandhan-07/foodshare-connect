@@ -2,8 +2,6 @@ const jwt = require("jsonwebtoken");
 const Donor = require("../models/Donor");
 const Receiver = require("../models/Receiver");
 
-// Reads the token from the Authorization header, verifies it,
-// and makes sure the logged-in user is a Donor.
 const protectDonor = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;
@@ -24,6 +22,12 @@ const protectDonor = async (req, res, next) => {
       return res.status(401).json({ message: "Donor not found" });
     }
 
+    if (donor.fssaiStatus !== "Verified") {
+      return res.status(403).json({
+        message: "Your donor account is not verified",
+      });
+    }
+
     req.user = donor;
     req.user.role = "donor";
     next();
@@ -32,8 +36,6 @@ const protectDonor = async (req, res, next) => {
   }
 };
 
-// Reads the token from the Authorization header, verifies it,
-// and makes sure the logged-in user is a Receiver.
 const protectReceiver = async (req, res, next) => {
   try {
     const authHeader = req.headers.authorization;

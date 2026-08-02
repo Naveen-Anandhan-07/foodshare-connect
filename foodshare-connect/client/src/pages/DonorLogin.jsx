@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { loginDonor } from "../services/api";
 
-const DonorLogin = () => {
+function DonorLogin() {
   const [formData, setFormData] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -65,12 +65,12 @@ const DonorLogin = () => {
           </button>
         </form>
 
-        <p className="auth-footer-text">
+        <p className="auth-helper-text">
           New donor? <Link to="/donor/register">Register here</Link>
         </p>
       </div>
     </div>
   );
-};
+}
 
 export default DonorLogin;

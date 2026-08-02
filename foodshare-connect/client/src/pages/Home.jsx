@@ -1,25 +1,21 @@
 import { Link } from "react-router-dom";
 import {
   FaHandHoldingHeart,
-  FaUsers,
-  FaBoxes,
   FaLeaf,
-  FaUtensils,
   FaSearchLocation,
   FaTruck,
 } from "react-icons/fa";
 
-const Home = () => {
+function Home() {
   return (
     <div>
-      {/* Hero */}
       <section className="hero">
         <div className="hero-inner">
           <div className="hero-text">
             <h1>Turning Surplus Food Into Shared Meals</h1>
             <p>
               FoodShare Connect links restaurants, hostels, homes, and event organizers
-              with NGOs, shelters, and volunteers — so good food reaches people instead
+              with NGOs, shelters, and volunteers - so good food reaches people instead
               of the bin.
             </p>
             <div className="hero-actions">
@@ -39,47 +35,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Impact stats */}
-      <section className="section">
-        <div className="container">
-          <h2 className="section-title">Our Impact</h2>
-          <p className="section-subtitle">
-            Every donation makes a real difference in someone's day.
-          </p>
-          <div className="grid grid-4">
-            <div className="card stat-card">
-              <div className="stat-icon">
-                <FaUtensils />
-              </div>
-              <h3>12,400+</h3>
-              <p>Meals Shared</p>
-            </div>
-            <div className="card stat-card">
-              <div className="stat-icon">
-                <FaHandHoldingHeart />
-              </div>
-              <h3>320+</h3>
-              <p>Active Donors</p>
-            </div>
-            <div className="card stat-card">
-              <div className="stat-icon">
-                <FaUsers />
-              </div>
-              <h3>510+</h3>
-              <p>Registered Receivers</p>
-            </div>
-            <div className="card stat-card">
-              <div className="stat-icon">
-                <FaBoxes />
-              </div>
-              <h3>6.8 tons</h3>
-              <p>Food Saved</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* How it works */}
       <section className="section" style={{ background: "var(--white)" }}>
         <div className="container">
           <h2 className="section-title">How It Works</h2>
@@ -110,6 +65,6 @@ const Home = () => {
       </section>
     </div>
   );
-};
+}
 
 export default Home;

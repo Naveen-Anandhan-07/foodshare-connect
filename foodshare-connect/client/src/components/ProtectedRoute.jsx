@@ -1,7 +1,6 @@
 import { Navigate } from "react-router-dom";
 
-// Guards a route so only a logged-in user with the correct role can access it.
-const ProtectedRoute = ({ children, allowedRole }) => {
+function ProtectedRoute({ children, allowedRole }) {
   const token = localStorage.getItem("token");
   const role = localStorage.getItem("role");
 
@@ -10,6 +9,6 @@ const ProtectedRoute = ({ children, allowedRole }) => {
   }
 
   return children;
-};
+}
 
 export default ProtectedRoute;

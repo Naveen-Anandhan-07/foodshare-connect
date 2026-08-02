@@ -1,5 +1,4 @@
 const express = require("express");
-const router = express.Router();
 const {
   createDonation,
   getAllDonations,
@@ -8,19 +7,59 @@ const {
   getDonationById,
   updateDonation,
   deleteDonation,
-} = require("../controllers/donationController");
-const { protectDonor } = require("../middleware/authMiddleware");
+} = require(
+  "../controllers/donationController"
+);
+const {
+  protectDonor,
+} = require(
+  "../middleware/authMiddleware"
+);
+const upload = require(
+  "../middleware/uploadMiddleware"
+);
 
-// Public/shared reads
-router.get("/available", getAvailableDonations);
+const router = express.Router();
 
-// Donor-only routes (must come before /:id to avoid route collisions)
-router.get("/my-donations", protectDonor, getMyDonations);
-router.post("/", protectDonor, createDonation);
+router.get(
+  "/available",
+  getAvailableDonations
+);
 
-router.get("/", getAllDonations);
-router.get("/:id", getDonationById);
-router.put("/:id", protectDonor, updateDonation);
-router.delete("/:id", protectDonor, deleteDonation);
+router.get(
+  "/my-donations",
+  protectDonor,
+  getMyDonations
+);
+
+router.post(
+  "/",
+  protectDonor,
+  upload.single("foodImage"),
+  createDonation
+);
+
+router.get(
+  "/",
+  getAllDonations
+);
+
+router.get(
+  "/:id",
+  getDonationById
+);
+
+router.put(
+  "/:id",
+  protectDonor,
+  upload.single("foodImage"),
+  updateDonation
+);
+
+router.delete(
+  "/:id",
+  protectDonor,
+  deleteDonation
+);
 
 module.exports = router;

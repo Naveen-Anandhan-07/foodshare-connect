@@ -1,4 +1,7 @@
-import { useEffect, useState } from "react";
+import {
+  useEffect,
+  useState,
+} from "react";
 import { toast } from "react-toastify";
 import { FaInbox } from "react-icons/fa";
 import {
@@ -6,97 +9,221 @@ import {
   acceptRequest,
   rejectRequest,
   completeRequest,
+  createDonorReview,
 } from "../services/api";
 import RequestCard from "../components/RequestCard";
 
-const DonorRequests = () => {
-  const [requests, setRequests] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+function getErrorMessage(
+  error,
+  defaultMessage
+) {
+  if (
+    error.response &&
+    error.response.data &&
+    error.response.data.message
+  ) {
+    return error.response.data.message;
+  }
 
-  const loadRequests = async () => {
+  return defaultMessage;
+}
+
+function DonorRequests() {
+  const [requests, setRequests] =
+    useState([]);
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState("");
+
+  async function loadRequests() {
     setLoading(true);
     setError("");
+
     try {
-      const { data } = await getDonorRequests();
-      setRequests(data);
-    } catch (err) {
-      setError(err.response?.data?.message || "Failed to load requests");
+      const response =
+        await getDonorRequests();
+
+      setRequests(response.data);
+    } catch (error) {
+      setError(
+        getErrorMessage(
+          error,
+          "Failed to load requests"
+        )
+      );
     } finally {
       setLoading(false);
     }
-  };
+  }
 
-  useEffect(() => {
+  useEffect(function () {
     loadRequests();
+
+    const timer = setInterval(
+      async function () {
+        try {
+          const response =
+            await getDonorRequests();
+          setRequests(response.data);
+        } catch (error) {
+          return;
+        }
+      },
+      30000
+    );
+
+    return function () {
+      clearInterval(timer);
+    };
   }, []);
 
-  const handleAccept = async (request) => {
+  async function handleAccept(
+    request
+  ) {
     try {
       await acceptRequest(request._id);
       toast.success("Request accepted");
       loadRequests();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to accept request");
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Failed to accept request"
+        )
+      );
     }
-  };
+  }
 
-  const handleReject = async (request) => {
+  async function handleReject(
+    request
+  ) {
     try {
       await rejectRequest(request._id);
       toast.success("Request rejected");
       loadRequests();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to reject request");
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Failed to reject request"
+        )
+      );
     }
-  };
+  }
 
-  const handleComplete = async (request) => {
+  async function handleComplete(
+    request,
+    otp
+  ) {
     try {
-      await completeRequest(request._id);
-      toast.success("Marked as completed");
+      await completeRequest(
+        request._id,
+        otp
+      );
+
+      toast.success(
+        "Pickup confirmed"
+      );
+
       loadRequests();
-    } catch (err) {
-      toast.error(err.response?.data?.message || "Failed to complete request");
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Failed to confirm pickup"
+        )
+      );
     }
-  };
+  }
+
+  async function handleReview(
+    request,
+    rating,
+    feedback
+  ) {
+    try {
+      await createDonorReview(
+        request._id,
+        {
+          rating: rating,
+          feedback: feedback,
+        }
+      );
+
+      toast.success(
+        "Review submitted"
+      );
+
+      loadRequests();
+    } catch (error) {
+      toast.error(
+        getErrorMessage(
+          error,
+          "Failed to submit review"
+        )
+      );
+    }
+  }
 
   return (
     <div className="dashboard">
       <div className="dashboard-header">
         <div>
           <h1>Requests Received</h1>
-          <p>Review and manage requests from receivers for your donations.</p>
+          <p>
+            Manage requests, pickups and
+            reviews.
+          </p>
         </div>
       </div>
 
-      {error && <div className="error-state">{error}</div>}
+      {error && (
+        <div className="error-state">
+          {error}
+        </div>
+      )}
 
       {loading ? (
-        <div className="loading-state">Loading requests...</div>
+        <div className="loading-state">
+          Loading requests...
+        </div>
       ) : requests.length === 0 ? (
         <div className="empty-state">
-          <div className="empty-icon">
-            <FaInbox />
-          </div>
-          <p>No requests available yet.</p>
+          <FaInbox />
+          <p>No requests available.</p>
         </div>
       ) : (
         <div className="donation-grid">
-          {requests.map((request) => (
-            <RequestCard
-              key={request._id}
-              request={request}
-              role="donor"
-              onAccept={handleAccept}
-              onReject={handleReject}
-              onComplete={handleComplete}
-            />
-          ))}
+          {requests.map(
+            function (request) {
+              return (
+                <RequestCard
+                  key={request._id}
+                  request={request}
+                  role="donor"
+                  onAccept={
+                    handleAccept
+                  }
+                  onReject={
+                    handleReject
+                  }
+                  onComplete={
+                    handleComplete
+                  }
+                  onReview={
+                    handleReview
+                  }
+                />
+              );
+            }
+          )}
         </div>
       )}
     </div>
   );
-};
+}
 
 export default DonorRequests;

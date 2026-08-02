@@ -28,7 +28,7 @@ FoodShare Connect gives donors a simple way to post surplus food that would othe
 foodshare-connect/
 ├── client/                     # React frontend
 │   ├── src/
-│   │   ├── components/         # Navbar, Footer, ProtectedRoute, DonationCard, RequestCard
+│   │   ├── components/         # Navbar, ProtectedRoute, DonationCard, RequestCard
 │   │   ├── pages/               # Home, Login/Register, Dashboards, Add/Edit Donation, Requests
 │   │   ├── services/api.js      # Axios instance + all API calls
 │   │   ├── styles/global.css    # Green & white theme
