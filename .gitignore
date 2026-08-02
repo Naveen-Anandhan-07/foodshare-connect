@@ -1,0 +1,34 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Vite cache & temp files
+.vite/
+client/.vite/
+*.log
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Production / Build outputs
+dist/
+build/
+
+# IDE / OS files
+.DS_Store
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Uploads & Logs
+uploads/
+server/uploads/*
+!server/uploads/.gitkeep
